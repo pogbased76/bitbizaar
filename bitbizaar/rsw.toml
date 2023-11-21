@@ -1,0 +1,12 @@
+# rsw.toml
+[new]
+# using: wasm-pack | rsw | user, default is `wasm-pack`
+using = "wasm-pack"
+# link type: npm | yarn | pnpm, default is `npm`
+cli = "npm"
+
+[[crates]]
+name = "rsw-hello"
+# <npm|yarn|pnpm> link
+# ⚠️ Note: must be set to `true`, default is `false`
+link = true
