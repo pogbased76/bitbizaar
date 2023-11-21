@@ -6,18 +6,19 @@ import commonjs from '@rollup/plugin-commonjs';
 
 export default defineConfig({
   plugins: [wasm(),   nodePolyfills(), commonjs()],
-  root: '.', // Points to the directory where `index.html` is located
+  root: 'dist', // Points to the directory where `index.html` is located
   build: {
     outDir: 'dist',
     rollupOptions: {
       // Ignore specific Node.js modules
-      external: ['os', 'net', 'dgram', 'child_process', 'fs', 'http', 'https', 'path', 'crypto', 'stream', 'assert', 'util', 'module', 'timers', 'constant','SIGNALS'],
+     external: ['os', 'net', 'dgram', 'child_process', 'fs', 'http', 'https', 'path', 'crypto', 'stream', 'assert', 'util', 'module', 'timers', 'constant','SIGNALS'],
     },
     // other options...
   },
   server: {
     host: true, // Listen on all network interfaces
-    port: 1420, // Specify the port
+    port: 80, // Specify the port
+    
     // other server options...
   },
   resolve: {

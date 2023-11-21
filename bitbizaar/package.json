@@ -1,8 +1,9 @@
 {
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "tauri": "tauri dev",
     "build": "prestart vite build; trunk build",
+    "start": "vite",
     "prestart": "node prestart.js"
   },
   "dependencies": {
