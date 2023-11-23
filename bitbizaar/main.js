@@ -1,35 +1,17 @@
-// Import necessary libraries
 import IPFS from 'ipfs-core';
 import { create } from '@orbitdb/core';
 import * as OrbitDBIdentityProviderEthereum from '@orbitdb/identity-provider-ethereum';
 import { Identities, addIdentityProvider } from '@orbitdb/core';
 
-async function init() {
-    // Initialize IPFS
+// Initialize IPFS and add Ethereum Identity Provider to OrbitDB
+async function initOrbitDB() {
     const ipfs = await IPFS.create();
-
-    // Add Ethereum Identity Provider to OrbitDB
     addIdentityProvider(OrbitDBIdentityProviderEthereum);
-
-    // Create identities using the IPFS instance
     const identities = await Identities({ ipfs });
-
-    // Check for Ethereum provider (e.g., MetaMask)
-    if (typeof window.ethereum !== 'undefined') {
-        // Get user's Ethereum account and signature
-        const { account, signature } = await getSignature();
-
-        // Create an Ethereum identity with a dynamic user ID
-        const identity = await identities.createIdentity({ id: account, type: 'ethereum' });
-
-        // Display user information
-        displayUserInfo(account, signature);
-    } else {
-        // Handle the absence of an Ethereum provider
-        document.querySelector('#app').innerHTML = '<p>Ethereum wallet not detected. Please install MetaMask.</p>';
-    }
+    return identities;
 }
 
+// Get user's Ethereum account and signature
 async function getSignature() {
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const account = accounts[0];
@@ -40,11 +22,23 @@ async function getSignature() {
     return { account, signature };
 }
 
-function displayUserInfo(account, signature) {
-    document.querySelector('#userInfo').innerHTML = `
-        <p>Address: ${account}</p>
-        <p>Signature: ${signature}</p>`;
+// Exposed function to authenticate the user
+export async function authenticateUser() {
+    if (typeof window.ethereum !== 'undefined') {
+        const identities = await initOrbitDB();
+        const { account, signature } = await getSignature();
+
+        const identity = await identities.createIdentity({ id: account, type: 'ethereum' });
+
+        // Return account and signature for Rust to use
+        return [account, signature];
+    } else {
+        document.querySelector('#root').innerHTML = '<p>Ethereum wallet not detected. Please install MetaMask.</p>';
+        return [];
+    }
 }
 
 // Initialize everything on window load
-window.addEventListener('load', init);
+window.addEventListener('load', async () => {
+    // Additional initialization logic if necessary
+});

@@ -2,9 +2,9 @@
   "scripts": {
     "dev": "vite --host",
     "tauri": "tauri dev",
-    "build": "prestart vite build; trunk build",
+    "build": "npm run prestart; wasm-pack build; vite build",
     "start": "vite",
-    "prestart": "node prestart.js"
+    "prestart": "node ./prestart.js"
   },
   "dependencies": {
     "@orbitdb/core": "^1.0.0",
