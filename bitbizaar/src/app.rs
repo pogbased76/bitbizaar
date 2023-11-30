@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use crate::context_provider::Web3ContextProvider;
 use yew_router::prelude::*;
-use crate::pages::{Route, switch};
+use crate::pages::router::{Route, switch};
 
 
 #[function_component(App)]

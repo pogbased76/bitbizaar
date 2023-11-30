@@ -18,4 +18,6 @@ js-sys = "0.3"
 yew-router = "0.18.0"
 
 [workspace]
-members = ["src-tauri"]
+members = ["src-tauri",
+"wallets"
+]
