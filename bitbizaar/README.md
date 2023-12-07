@@ -15,7 +15,7 @@ This template should help get you started developing with Tauri and Yew.
         - [] Make sure content that is changed/edited, is done so using there signature.
         - [] Have basic access controls/tokens/signatures as well as other forms of ddos protection.
     - [] 
-    - []
+    - [] 
 - []
 - []
 - []

@@ -1,14 +1,9 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+mod eth;
+mod btc;
+ mod zcash;
+mod xmr;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use eth::generate_ether_wallet;
+pub use btc::generate_bitcoin_wallet;
+pub use zcash::generate_zcash_wallet;
+pub use xmr::generate_xmr_wallet;
