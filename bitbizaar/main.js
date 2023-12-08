@@ -42,3 +42,4 @@ export async function authenticateUser() {
 window.addEventListener('load', async () => {
     // Additional initialization logic if necessary
 });
+//Change this page to be the Rest API endpoint.
