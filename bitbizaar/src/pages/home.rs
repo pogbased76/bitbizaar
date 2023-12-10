@@ -3,12 +3,8 @@ use yew::prelude::*;
 
 
 #[function_component]
-pub fn Home -> Html {
+pub fn Home() -> Html {
     html! {
-    <>
-
-
-
-    </>
+  
     }
 }

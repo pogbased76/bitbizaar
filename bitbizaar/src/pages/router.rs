@@ -1,10 +1,11 @@
 use yew_router::prelude::*;
 use yew::prelude::*;
-use crate::scripts::hashtags::Hashtag;
+use crate::pages::home::Home;
+use crate::pages::login::Login;
 use crate::scripts::cashtags::Cashtag;
+use crate::scripts::hashtags::Hashtag;
 
-
-#[derive(Debug, Clone PartialEq, Routable)]
+#[derive(Clone, PartialEq, Routable)]
 pub enum Route {
     #[at("/")]
     Home,
@@ -23,8 +24,8 @@ pub fn switch(routes: Route) -> Html {
     match routes {
         Route::Home => html! { <Home /> },
         Route::Login => html! { <Login /> },
-        Route::Hashtag { tag } => html! { <Hashtag tag={tag.clone()} /> },
-        Route::Cashtag { deal } => html! { <Cashtag deal={deal.clone()} /> },
+        Route::Hashtag { tag } => html! { <Hashtag tag={tag} /> },
+        Route::Cashtag { deal } => html! { <Cashtag deal={deal} /> },
         Route::NotFound => html! { <div>{"404 Not Found"}</div> },
     }
 }
