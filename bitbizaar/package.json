@@ -4,20 +4,24 @@
     "tauri": "tauri dev",
     "build": "npm run build:ipfs && npm run build:orbitdb && wasm-pack build && vite build",
     "start": "vite",
-    "build:ipfs": "esbuild ./node_modules/ipfs-core/src/index.js --bundle --platform=node --external:node:* --external:crypto --external:http --external:https --external:module --external:path --external:stream --external:assert --external:fs --external:net --external:timers --external:child_process --external:os --external:dgram --format=esm --sourcemap --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --splitting --outdir=./src/modules/ipfs-core",
-    "build:orbitdb": "esbuild ./node_modules/@orbitdb/core/src/index.js --bundle --external:node:* --external:net --external:crypto --external:http --external:https --external:dgram --external:fs --external:child_process --external:util --format=esm --sourcemap --main-fields=browser,module,main --inject:./src/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --splitting --outdir=./src/modules/orbitdb-core"
+    "build:ipfs": "esbuild ./node_modules/ipfs-core/src/index.js --bundle --platform=node --external:node:* --external:crypto --external:http --external:https --external:module --external:path --external:stream --external:assert --external:fs --external:net --external:timers --external:child_process --external:os --external:dgram --format=esm --sourcemap --main-fields=browser,module,main --inject:./js/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --splitting --outdir=./web/modules/ipfs-core",
+    "build:orbitdb": "esbuild ./node_modules/@orbitdb/core/src/index.js --bundle --external:node:* --external:net --external:crypto --external:http --external:https --external:dgram --external:fs --external:child_process --external:util --format=esm --sourcemap --main-fields=browser,module,main --inject:./js/node-globals.js --define:globalThis.process.env.NODE_ENV='\"production\"' --splitting --outdir=./js/modules/orbitdb-core"
   },
   "dependencies": {
     "@orbitdb/core": "^1.0.0",
     "@orbitdb/identity-provider-ethereum": "^1.0.0",
     "debug": "^4.3.4",
     "ipfs-core": "^0.18.1",
+    "it-to-buffer": "^4.0.5",
+    "process": "^0.11.10",
+    "util": "^0.12.5",
     "vite": "^4.5.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "buffer": "^6.0.3",
-    "esbuild": "^0.14.0", 
+    "esbuild": "^0.14.0",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-polyfills": "^0.2.1",
     "vite-plugin-node": "^3.1.0",

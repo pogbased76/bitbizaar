@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::context_provider::Web3ContextProvider;
+use crate::scripts::context_provider::Web3ContextProvider;
 use yew_router::prelude::*;
 use crate::pages::router::{Route, switch};
 

@@ -15976,7 +15976,7 @@ function base(ALPHABET, name3) {
   var LEADER = ALPHABET.charAt(0);
   var FACTOR = Math.log(BASE) / Math.log(256);
   var iFACTOR = Math.log(256) / Math.log(BASE);
-  function encode8(source) {
+  function encode9(source) {
     if (source instanceof Uint8Array)
       ;
     else if (ArrayBuffer.isView(source)) {
@@ -16082,7 +16082,7 @@ function base(ALPHABET, name3) {
     throw new Error(`Non-${name3} character`);
   }
   return {
-    encode: encode8,
+    encode: encode9,
     decodeUnsafe,
     decode: decode10
   };
@@ -16170,13 +16170,13 @@ var Codec = class {
     return this.decoder.decode(input);
   }
 };
-var from = ({ name: name3, prefix, encode: encode8, decode: decode10 }) => new Codec(name3, prefix, encode8, decode10);
+var from = ({ name: name3, prefix, encode: encode9, decode: decode10 }) => new Codec(name3, prefix, encode9, decode10);
 var baseX = ({ prefix, name: name3, alphabet: alphabet2 }) => {
-  const { encode: encode8, decode: decode10 } = base_x_default(alphabet2, name3);
+  const { encode: encode9, decode: decode10 } = base_x_default(alphabet2, name3);
   return from({
     prefix,
     name: name3,
-    encode: encode8,
+    encode: encode9,
     decode: (text) => coerce(decode10(text))
   });
 };
@@ -16734,12 +16734,12 @@ var cidSymbol = Symbol.for("@ipld/js-cid/CID");
 
 // node_modules/multiformats/src/hashes/hasher.js
 init_node_globals();
-var from2 = ({ name: name3, code: code3, encode: encode8 }) => new Hasher(name3, code3, encode8);
+var from2 = ({ name: name3, code: code3, encode: encode9 }) => new Hasher(name3, code3, encode9);
 var Hasher = class {
-  constructor(name3, code3, encode8) {
+  constructor(name3, code3, encode9) {
     this.name = name3;
     this.code = code3;
-    this.encode = encode8;
+    this.encode = encode9;
   }
   digest(input) {
     if (input instanceof Uint8Array) {
@@ -18417,7 +18417,7 @@ var create2 = async (identity3, id, payload, clock = null, next = [], refs = [])
   entry.key = identity3.publicKey;
   entry.identity = identity3.hash;
   entry.sig = signature;
-  return _encodeEntry(entry);
+  return encode6(entry);
 };
 var verify = async (identities, entry) => {
   if (!identities)
@@ -18447,9 +18447,9 @@ var isEqual = (a, b) => {
 };
 var decode8 = async (bytes2) => {
   const { value } = await decode5({ bytes: bytes2, codec, hasher });
-  return _encodeEntry(value);
+  return encode6(value);
 };
-var _encodeEntry = async (entry) => {
+var encode6 = async (entry) => {
   const { cid, bytes: bytes2 } = await encode3({ value: entry, codec, hasher });
   const hash2 = cid.toString(hashStringEncoding);
   const clock = Clock(entry.clock.id, entry.clock.time);
@@ -18464,6 +18464,7 @@ var entry_default = {
   create: create2,
   verify,
   decode: decode8,
+  encode: encode6,
   isEntry,
   isEqual
 };
@@ -18536,6 +18537,11 @@ var Heads = async ({ storage, heads }) => {
     await set(newHeads);
     return newHeads;
   };
+  const remove = async (hash2) => {
+    const currentHeads = await all();
+    const newHeads = currentHeads.filter((e) => e.hash !== hash2);
+    await set(newHeads);
+  };
   const iterator = async function* () {
     const it = storage.iterator();
     for await (const [, bytes2] of it) {
@@ -18561,6 +18567,7 @@ var Heads = async ({ storage, heads }) => {
     put,
     set,
     add: add2,
+    remove,
     iterator,
     all,
     clear,
@@ -18661,7 +18668,6 @@ var Log = async (identity3, { logId, logHeads, access, entryStorage, headsStorag
     const bytes2 = await _entries.get(hash2);
     if (bytes2) {
       const entry = await entry_default.decode(bytes2);
-      await _index.put(hash2, true);
       return entry;
     }
   };
@@ -18698,46 +18704,66 @@ Key "${identity3.hash}" is not allowed to write to the log`);
     if (!isLog(log)) {
       throw new Error("Given argument is not an instance of Log");
     }
+    if (_entries.merge) {
+      await _entries.merge(log.storage);
+    }
     const heads2 = await log.heads();
     for (const entry of heads2) {
       await joinEntry(entry);
     }
-    if (_entries.merge) {
-      await _entries.merge(log.storage);
-    }
   };
   const joinEntry = async (entry) => {
-    const { hash: hash2 } = entry;
-    const isAlreadyInTheLog = await has(hash2);
+    const isAlreadyInTheLog = await has(entry.hash);
     if (isAlreadyInTheLog) {
       return false;
-    } else {
-      const it = traverse(await heads(), (e) => e.next.includes(hash2) || entry.next.includes(e.hash));
-      for await (const e of it) {
-        if (e.next.includes(hash2)) {
-          await _index.put(hash2, true);
-          return false;
+    }
+    const verifyEntry = async (entry2) => {
+      if (entry2.id !== id) {
+        throw new Error(`Entry's id (${entry2.id}) doesn't match the log's id (${id}).`);
+      }
+      const canAppend = await access.canAppend(entry2);
+      if (!canAppend) {
+        throw new Error(`Could not append entry:
+Key "${entry2.identity}" is not allowed to write to the log`);
+      }
+      const isValid = await entry_default.verify(identity3, entry2);
+      if (!isValid) {
+        throw new Error(`Could not validate signature for entry "${entry2.hash}"`);
+      }
+    };
+    await verifyEntry(entry);
+    const headsHashes = (await heads()).map((e) => e.hash);
+    const hashesToAdd = /* @__PURE__ */ new Set([entry.hash]);
+    const hashesToGet = /* @__PURE__ */ new Set([...entry.next, ...entry.refs]);
+    const connectedHeads = /* @__PURE__ */ new Set();
+    const traverseAndVerify = async () => {
+      const getEntries = Array.from(hashesToGet.values()).filter(has).map(get2);
+      const entries = await Promise.all(getEntries);
+      for (const e of entries) {
+        hashesToGet.delete(e.hash);
+        await verifyEntry(e);
+        hashesToAdd.add(e.hash);
+        for (const hash2 of [...e.next, ...e.refs]) {
+          const isInTheLog = await has(hash2);
+          if (!isInTheLog && !hashesToAdd.has(hash2)) {
+            hashesToGet.add(hash2);
+          } else if (headsHashes.includes(hash2)) {
+            connectedHeads.add(hash2);
+          }
         }
       }
+      if (hashesToGet.size > 0) {
+        await traverseAndVerify();
+      }
+    };
+    await traverseAndVerify();
+    for (const hash2 of hashesToAdd.values()) {
+      await _index.put(hash2, true);
     }
-    if (entry.id !== id) {
-      throw new Error(`Entry's id (${entry.id}) doesn't match the log's id (${id}).`);
+    for (const hash2 of connectedHeads.values()) {
+      await _heads.remove(hash2);
     }
-    const canAppend = await access.canAppend(entry);
-    if (!canAppend) {
-      throw new Error(`Could not append entry:
-Key "${entry.identity}" is not allowed to write to the log`);
-    }
-    const isValid = await entry_default.verify(identity3, entry);
-    if (!isValid) {
-      throw new Error(`Could not validate signature for entry "${hash2}"`);
-    }
-    const newHeads = await _heads.add(entry);
-    if (!newHeads) {
-      return false;
-    }
-    await _entries.put(hash2, entry.bytes);
-    await _index.put(hash2, true);
+    await _heads.add(entry);
     return true;
   };
   const traverse = async function* (rootEntries, shouldStopFn, useRefs = true) {
@@ -18771,7 +18797,7 @@ Key "${entry.identity}" is not allowed to write to the log`);
             }
           };
           const nexts = await Promise.all(toFetch.map(fetchEntries));
-          toFetch = nexts.filter((e) => e != null).reduce((res, acc) => Array.from(/* @__PURE__ */ new Set([...res, ...acc.next, ...useRefs ? acc.refs : []])), []).filter(notIndexed);
+          toFetch = nexts.filter((e) => e !== null && e !== void 0).reduce((res, acc) => Array.from(/* @__PURE__ */ new Set([...res, ...acc.next, ...useRefs ? acc.refs : []])), []).filter(notIndexed);
           stack = [...nexts, ...stack];
         }
       }
@@ -19527,7 +19553,7 @@ var alphabetCharsToBytes = alphabet.reduce((p, c, i) => {
   p[c.codePointAt(0)] = i;
   return p;
 }, []);
-function encode6(data) {
+function encode7(data) {
   return data.reduce((p, c) => {
     p += alphabetBytesToChars[c];
     return p;
@@ -19547,7 +19573,7 @@ function decode9(str) {
 var base256emoji = from({
   prefix: "\u{1F680}",
   name: "base256emoji",
-  encode: encode6,
+  encode: encode7,
   decode: decode9
 });
 
@@ -19645,9 +19671,9 @@ __export(identity_exports2, {
 init_node_globals();
 var code2 = 0;
 var name2 = "identity";
-var encode7 = coerce;
-var digest = (input) => create(code2, encode7(input));
-var identity2 = { code: code2, name: name2, encode: encode7, digest };
+var encode8 = coerce;
+var digest = (input) => create(code2, encode8(input));
+var identity2 = { code: code2, name: name2, encode: encode8, digest };
 
 // node_modules/multiformats/src/basics.js
 var bases = { ...identity_exports, ...base2_exports, ...base8_exports, ...base10_exports, ...base16_exports, ...base32_exports, ...base36_exports, ...base58_exports, ...base64_exports, ...base256emoji_exports };
@@ -19663,14 +19689,14 @@ function allocUnsafe(size = 0) {
 }
 
 // node_modules/uint8arrays/dist/src/util/bases.js
-function createCodec(name3, prefix, encode8, decode10) {
+function createCodec(name3, prefix, encode9, decode10) {
   return {
     name: name3,
     prefix,
     encoder: {
       name: name3,
       prefix,
-      encode: encode8
+      encode: encode9
     },
     decoder: {
       decode: decode10
@@ -22296,11 +22322,11 @@ var CODEC_TYPES;
   CODEC_TYPES2[CODEC_TYPES2["END_GROUP"] = 4] = "END_GROUP";
   CODEC_TYPES2[CODEC_TYPES2["BIT32"] = 5] = "BIT32";
 })(CODEC_TYPES || (CODEC_TYPES = {}));
-function createCodec2(name3, type7, encode8, decode10) {
+function createCodec2(name3, type7, encode9, decode10) {
   return {
     name: name3,
     type: type7,
-    encode: encode8,
+    encode: encode9,
     decode: decode10
   };
 }
@@ -22313,7 +22339,7 @@ function enumeration(v) {
     }
     return v[val];
   }
-  const encode8 = function enumEncode(val, writer) {
+  const encode9 = function enumEncode(val, writer) {
     const enumValue = findValue(val);
     writer.int32(enumValue);
   };
@@ -22321,13 +22347,13 @@ function enumeration(v) {
     const val = reader.int32();
     return findValue(val);
   };
-  return createCodec2("enum", CODEC_TYPES.VARINT, encode8, decode10);
+  return createCodec2("enum", CODEC_TYPES.VARINT, encode9, decode10);
 }
 
 // node_modules/protons-runtime/dist/src/codecs/message.js
 init_node_globals();
-function message(encode8, decode10) {
-  return createCodec2("message", CODEC_TYPES.LENGTH_DELIMITED, encode8, decode10);
+function message(encode9, decode10) {
+  return createCodec2("message", CODEC_TYPES.LENGTH_DELIMITED, encode9, decode10);
 }
 
 // node_modules/@libp2p/crypto/dist/src/keys/keys.js
@@ -24304,6 +24330,9 @@ var import_util5 = __toESM(require_util(), 1);
 // node_modules/uint8arrays/dist/src/compare.js
 init_node_globals();
 function compare2(a, b) {
+  if (globalThis.Buffer != null) {
+    return globalThis.Buffer.compare(a, b);
+  }
   for (let i = 0; i < a.byteLength; i++) {
     if (a[i] < b[i]) {
       return -1;
