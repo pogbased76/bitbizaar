@@ -4,6 +4,7 @@ import nodePolyfills from 'rollup-plugin-node-polyfills';
 import commonjs from '@rollup/plugin-commonjs';
 import builtins from 'rollup-plugin-node-builtins';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { Buffer } from 'buffer';
 
 export default defineConfig({
   plugins: [
@@ -31,7 +32,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         'os', 'net', 'dgram', 'child_process', 'fs', 'http', 'https', 'path',
-        'crypto', 'stream', 'assert', 'util', 'module', 'timers', 'constant', 'SIGNALS',
+        'crypto', 'stream', 'assert', 'util', 'module', 'timers', 'constant', 'SIGNALS', 'buffer'
       ],
     },
   },
